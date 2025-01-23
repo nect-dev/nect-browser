@@ -1,10 +1,11 @@
 import { Minus, Maximize2, PanelLeft, Share, Ellipsis, X } from 'lucide-react';
+import NavigationBar from "@/components/main/NavigationBar"
 
 export default function MainApp() {
   const handleWindowControls = {
-    minimize: () => window.electron.ipcRenderer.send('window-control', 'minimize'),
-    maximize: () => window.electron.ipcRenderer.send('window-control', 'maximize'),
-    close: () => window.electron.ipcRenderer.send('window-control', 'close')
+    minimize: () => window.electron.ipcRenderer?.send('window-control', 'minimize'),
+    maximize: () => window.electron.ipcRenderer?.send('window-control', 'maximize'),
+    close: () => window.electron.ipcRenderer?.send('window-control', 'close')
   };
 
   const toggleSidebar = () => {
@@ -48,6 +49,7 @@ export default function MainApp() {
           >
             <PanelLeft className="w-4 h-4" />
           </button>
+          <NavigationBar />
           <div className="flex gap-1 mx-2">
             <button className="w-8 h-8 flex items-center justify-center text-gray-100 rounded-lg hover:bg-gray-100/10">
               <Share className="w-4 h-4" />
