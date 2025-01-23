@@ -3,14 +3,14 @@
   "description": "description",
   "private": true,
   "version": "0.0.0",
-  "main": "build/src-electron/src/main.js",
+  "main": "build/src-electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "electron:dev": "concurrently \"npm run dev\" \"tsc -p src-electron && electron .",
-    "electron:start": "npm run build && tsc -p src-electron && electron .",
+    "electron:start": "npm run build && tsc -p src-electron && electron --trace-warnings .",
     "electron:build": "npm run build && tsc -p src-electron && electron-builder"
   },
   "dependencies": {

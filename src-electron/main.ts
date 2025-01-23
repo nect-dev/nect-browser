@@ -38,11 +38,11 @@ function createMainWindow() {
   win.contentView.addChildView(uiView);
   uiView.setBounds({ x: 0, y: 0, width: 1200, height: UI_HEIGHT });
 
-  if (!app.isPackaged) {
+  if (app.isPackaged) {
     uiView.webContents.loadURL('http://localhost:5173/main.html');
     uiView.webContents.openDevTools({ mode: 'detach' });
   } else {
-    uiView.webContents.loadFile(path.join(__dirname, '../../src/main.html'));
+    uiView.webContents.loadFile(path.join(__dirname, '../src/main.html'));
   }
 
   windows.browserManager = new BrowserManager(win);
@@ -83,10 +83,10 @@ function createSidebarWindow() {
   win.contentView.addChildView(view);
   view.setBounds({ x: 0, y: 0, width: 300, height: 800 });
 
-  if (!app.isPackaged) {
+  if (app.isPackaged) {
     view.webContents.loadURL('http://localhost:5173/sidebar.html');
   } else {
-    view.webContents.loadFile(path.join(__dirname, '../../src/sidebar.html'));
+    view.webContents.loadFile(path.join(__dirname, '../src/sidebar.html'));
   }
 
   win.on('resize', () => {
