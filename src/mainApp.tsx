@@ -15,7 +15,7 @@ export default function MainApp() {
   return (
     <div className="h-screen relative flex flex-col">
       <img
-        src="/assets/wallpapers/default.jpg"
+        src="assets/wallpapers/default.jpg"
         className="w-full h-full inset-0 absolute object-cover object-center -z-10"
         alt="Background"
       />

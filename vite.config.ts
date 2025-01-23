@@ -1,14 +1,13 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-
 export default defineConfig({
-  base: '/',
+  base: './',
   root: 'src',
-  publicDir: 'public',
+  publicDir: '../public',
   plugins: [react()],
   build: {
-    outDir: "build",
+    outDir: "../build/src",
 		copyPublicDir: true,
 		emptyOutDir: true,
     rollupOptions: {
