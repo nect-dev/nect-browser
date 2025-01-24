@@ -152,7 +152,11 @@ function setupIpcHandlers() {
         windows.mainWindow.minimize();
         break;
       case "maximize":
-        windows.mainWindow.maximize();
+        if (windows.mainWindow.isMaximized()) {
+          windows.mainWindow.unmaximize();
+        } else {
+          windows.mainWindow.maximize();
+        }
         break;
       case "close":
         windows.mainWindow.close();
