@@ -194,7 +194,7 @@ function setupIpcHandlers() {
   ipcMain.on("toggle-sidebar", () => {
     if (!windows.mainWindow || !windows.sidebarManager) return;
 
-    const [width, height] = windows.mainWindow.getSize();
+    const [width, height] = windows.mainWindow.getContentSize();
 
     // サイドバーの位置とサイズを計算
     const sidebarBounds = {
