@@ -12,7 +12,13 @@ export default function NavigationBar() {
   useEffect(() => {
     const activeTab = tabs.find((tab) => tab.id === activeTabId);
     if (activeTab) {
-      setUrl(activeTab.url);
+      const urlObj = new URL(activeTab.url);
+      if (urlObj.hostname === "www.google.com" && urlObj.pathname === "/search") {
+        const searchQuery = urlObj.searchParams.get("q");
+        setUrl(searchQuery || activeTab.url);
+      } else {
+        setUrl(activeTab.url);
+      }
     }
 
     const handleNavigationState = (
@@ -29,16 +35,38 @@ export default function NavigationBar() {
       }
     };
 
-    window.electron.ipcRenderer.on("navigation-state-changed", handleNavigationState);
+    const cleanup = window.electron.ipcRenderer.on(
+      "navigation-state-changed",
+      handleNavigationState
+    );
 
-    return () => {
-      window.electron.ipcRenderer.removeListener("navigation-state-changed", handleNavigationState);
-    };
+    return cleanup;
   }, [activeTabId, tabs]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const fullUrl = url.startsWith("http") ? url : `https://${url}`;
+    let fullUrl: string;
+
+    const trimmedUrl = url.trim();
+    if (trimmedUrl.startsWith("http://") || trimmedUrl.startsWith("https://")) {
+      fullUrl = trimmedUrl;
+    } else {
+      if (
+        // ドメイン
+        /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/.test(trimmedUrl) ||
+        // localhost
+        trimmedUrl === "localhost" ||
+        // IPアドレス
+        /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(trimmedUrl)
+      ) {
+        fullUrl = `https://${trimmedUrl}`;
+      } else {
+        // 検索クエリとして扱う
+        const searchQuery = encodeURIComponent(trimmedUrl);
+        fullUrl = `https://www.google.com/search?q=${searchQuery}`;
+      }
+    }
+  
     window.electron.ipcRenderer.send("load-url", { url: fullUrl, tabId: activeTabId });
   };
 
@@ -96,7 +124,7 @@ export default function NavigationBar() {
           <Globe className="w-4 h-4 text-gray-100" />
           <input
             type="text"
-            value={url}
+            value={decodeURIComponent(url)}
             onChange={handleUrlChange}
             onFocus={handleFocus}
             placeholder="検索またはURLを入力"

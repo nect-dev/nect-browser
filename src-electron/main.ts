@@ -6,21 +6,19 @@ import { SidebarManager } from "./managers/SidebarManager";
 
 // ウィンドウの設定値
 const WINDOW_CONFIG = {
-  UI_HEIGHT: 80,
-  INITIAL_WIDTH: 1200,
-  INITIAL_HEIGHT: 800,
+  HEADER_HEIGHT: 80,
   SIDEBAR_WIDTH: 300,
 } as const;
 
 // ウィンドウの状態管理オブジェクト
 const windows: {
   mainWindow: BaseWindow | null;
-  uiView: WebContentsView | null;
+  headerView: WebContentsView | null;
   browserManager: BrowserManager | null;
   sidebarManager: SidebarManager | null;
 } = {
   mainWindow: null,
-  uiView: null,
+  headerView: null,
   browserManager: null,
   sidebarManager: null,
 };
@@ -28,11 +26,11 @@ const windows: {
 // メインウィンドウとUIビューを作成
 function createMainWindow() {
   const win = new BaseWindow({
-    width: WINDOW_CONFIG.INITIAL_WIDTH,
-    height: WINDOW_CONFIG.INITIAL_HEIGHT,
+    width: 1200,
+    height: 800,
   });
 
-  const uiView = new WebContentsView({
+  const headerView = new WebContentsView({
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -40,22 +38,22 @@ function createMainWindow() {
     },
   });
 
-  win.contentView.addChildView(uiView);
+  win.contentView.addChildView(headerView);
 
   const [width, _height] = win.getContentSize();
 
-  uiView.setBounds({
+  headerView.setBounds({
     x: 0,
     y: 0,
     width: width,
-    height: WINDOW_CONFIG.UI_HEIGHT,
+    height: WINDOW_CONFIG.HEADER_HEIGHT,
   });
 
   if (!app.isPackaged) {
-    uiView.webContents.loadURL("http://localhost:5173/main.html");
-    uiView.webContents.openDevTools({ mode: "detach" });
+    headerView.webContents.loadURL("http://localhost:5173/main.html");
+    headerView.webContents.openDevTools({ mode: "detach" });
   } else {
-    uiView.webContents.loadFile(path.join(__dirname, "../src/main.html"));
+    headerView.webContents.loadFile(path.join(__dirname, "../src/main.html"));
   }
 
   // ウィンドウリサイズ時の処理
@@ -63,11 +61,11 @@ function createMainWindow() {
     const [width, height] = win.getContentSize();
 
     // UIビューのサイズ更新
-    uiView.setBounds({
+    headerView.setBounds({
       x: 0,
       y: 0,
       width,
-      height: WINDOW_CONFIG.UI_HEIGHT,
+      height: WINDOW_CONFIG.HEADER_HEIGHT,
     });
 
     // サイドバーとブラウザビューの更新
@@ -75,9 +73,9 @@ function createMainWindow() {
       // サイドバーの位置とサイズを更新
       const sidebarBounds = {
         x: width - WINDOW_CONFIG.SIDEBAR_WIDTH,
-        y: WINDOW_CONFIG.UI_HEIGHT,
+        y: WINDOW_CONFIG.HEADER_HEIGHT,
         width: WINDOW_CONFIG.SIDEBAR_WIDTH,
-        height: height - WINDOW_CONFIG.UI_HEIGHT,
+        height: height - WINDOW_CONFIG.HEADER_HEIGHT,
       };
       windows.sidebarManager.updateBounds(sidebarBounds);
 
@@ -87,9 +85,9 @@ function createMainWindow() {
         if (activeTab) {
           activeTab.view.setBounds({
             x: 0,
-            y: WINDOW_CONFIG.UI_HEIGHT,
+            y: WINDOW_CONFIG.HEADER_HEIGHT,
             width: width - WINDOW_CONFIG.SIDEBAR_WIDTH,
-            height: height - WINDOW_CONFIG.UI_HEIGHT,
+            height: height - WINDOW_CONFIG.HEADER_HEIGHT,
           });
         }
       }
@@ -100,26 +98,26 @@ function createMainWindow() {
         if (activeTab) {
           activeTab.view.setBounds({
             x: 0,
-            y: WINDOW_CONFIG.UI_HEIGHT,
+            y: WINDOW_CONFIG.HEADER_HEIGHT,
             width: width,
-            height: height - WINDOW_CONFIG.UI_HEIGHT,
+            height: height - WINDOW_CONFIG.HEADER_HEIGHT,
           });
         }
       }
     }
   });
 
-  return { win, uiView };
+  return { win, headerView };
 }
 
 // アプリケーションの初期化処理を実行
 function initializeApp() {
   const main = createMainWindow();
   windows.mainWindow = main.win;
-  windows.uiView = main.uiView;
+  windows.headerView = main.headerView;
 
   // サイドバーマネージャーの初期化
-  windows.sidebarManager = new SidebarManager(WINDOW_CONFIG.UI_HEIGHT);
+  windows.sidebarManager = new SidebarManager(WINDOW_CONFIG.HEADER_HEIGHT);
   windows.mainWindow.contentView.addChildView(windows.sidebarManager.getView());
 
   // ブラウザマネージャーの初期化
@@ -129,15 +127,15 @@ function initializeApp() {
 
   // イベントハンドラーの設定
   windows.browserManager.on("title-updated", ({ tabId, title }) => {
-    windows.uiView?.webContents.send("title-changed", { tabId, title });
+    windows.headerView?.webContents.send("title-changed", { tabId, title });
   });
 
   windows.browserManager.on("url-updated", ({ tabId, url }) => {
-    windows.uiView?.webContents.send("url-changed", { tabId, url });
+    windows.headerView?.webContents.send("url-changed", { tabId, url });
   });
 
   windows.browserManager.on("navigation-state-changed", ({ tabId, canGoBack, canGoForward }) => {
-    windows.uiView?.webContents.send("navigation-state-changed", {
+    windows.headerView?.webContents.send("navigation-state-changed", {
       tabId,
       canGoBack,
       canGoForward,
@@ -165,14 +163,14 @@ function setupIpcHandlers() {
 
   // URLの読み込み
   ipcMain.on("load-url", async (_, { tabId, url }) => {
-    if (!windows.browserManager || !windows.uiView) return;
+    if (!windows.browserManager || !windows.headerView) return;
 
     const success = await windows.browserManager.loadURL(tabId, url);
     if (success) {
       // ナビゲーション状態の更新を送信
       const info = windows.browserManager.getTabInfo(tabId);
       if (info) {
-        windows.uiView.webContents.send("navigation-state-changed", {
+        windows.headerView.webContents.send("navigation-state-changed", {
           tabId,
           canGoBack: info.canGoBack,
           canGoForward: info.canGoForward,
@@ -183,14 +181,14 @@ function setupIpcHandlers() {
 
   // 履歴の移動
   ipcMain.on("navigate-history", async (_, { tabId, direction }) => {
-    if (!windows.browserManager || !windows.uiView) return;
+    if (!windows.browserManager || !windows.headerView) return;
 
     const success = await windows.browserManager.navigateHistory(tabId, direction);
     if (success) {
       // ナビゲーション状態の更新を送信
       const info = windows.browserManager.getTabInfo(tabId);
       if (info) {
-        windows.uiView.webContents.send("navigation-state-changed", {
+        windows.headerView.webContents.send("navigation-state-changed", {
           tabId,
           canGoBack: info.canGoBack,
           canGoForward: info.canGoForward,
@@ -214,9 +212,9 @@ function setupIpcHandlers() {
     // サイドバーの位置とサイズを計算
     const sidebarBounds = {
       x: width - WINDOW_CONFIG.SIDEBAR_WIDTH,
-      y: WINDOW_CONFIG.UI_HEIGHT,
+      y: WINDOW_CONFIG.HEADER_HEIGHT,
       width: WINDOW_CONFIG.SIDEBAR_WIDTH,
-      height: height - WINDOW_CONFIG.UI_HEIGHT,
+      height: height - WINDOW_CONFIG.HEADER_HEIGHT,
     };
 
     // サイドバーの表示を切り替え
@@ -228,9 +226,9 @@ function setupIpcHandlers() {
       if (activeTab) {
         activeTab.view.setBounds({
           x: 0,
-          y: WINDOW_CONFIG.UI_HEIGHT,
+          y: WINDOW_CONFIG.HEADER_HEIGHT,
           width: width - (windows.sidebarManager.getVisibility() ? WINDOW_CONFIG.SIDEBAR_WIDTH : 0),
-          height: height - WINDOW_CONFIG.UI_HEIGHT,
+          height: height - WINDOW_CONFIG.HEADER_HEIGHT,
         });
       }
     }
@@ -238,24 +236,24 @@ function setupIpcHandlers() {
 
   // タブの作成
   ipcMain.on("create-tab", (_, { tabId, url }) => {
-    if (!windows.browserManager || !windows.uiView) return;
+    if (!windows.browserManager || !windows.headerView) return;
 
     windows.browserManager.createTab(tabId, url || "about:blank");
     const info = windows.browserManager.switchTab(tabId);
-    windows.uiView.webContents.send("tab-created", { tabId, ...info });
+    windows.headerView.webContents.send("tab-created", { tabId, ...info });
   });
 
   // タブの切り替え
   ipcMain.on("switch-tab", (_, { tabId }) => {
-    if (!windows.browserManager || !windows.uiView) return;
+    if (!windows.browserManager || !windows.headerView) return;
 
     const info = windows.browserManager.switchTab(tabId);
     if (info) {
-      windows.uiView.webContents.send("tab-switched", { tabId, ...info });
+      windows.headerView.webContents.send("tab-switched", { tabId, ...info });
       // ナビゲーション状態を送信
       const tab = windows.browserManager.getTabInfo(tabId);
       if (tab) {
-        windows.uiView.webContents.send("navigation-state-changed", {
+        windows.headerView.webContents.send("navigation-state-changed", {
           tabId,
           canGoBack: info.canGoBack,
           canGoForward: info.canGoForward,
@@ -268,7 +266,7 @@ function setupIpcHandlers() {
   ipcMain.on("close-tab", (_, { tabId }) => {
     if (!windows.browserManager) return;
     windows.browserManager.closeTab(tabId);
-    windows.uiView.webContents.send("tab-closed", { tabId });
+    windows.headerView.webContents.send("tab-closed", { tabId });
   });
 }
 

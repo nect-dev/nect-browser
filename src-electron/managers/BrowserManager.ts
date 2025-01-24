@@ -78,6 +78,7 @@ export class BrowserManager extends EventEmitter {
   }
 
   private setupViewEvents(tabId: string, view: WebContentsView): () => void {
+    // タイトルのみが更新された場合
     const titleHandler = (_: Event, title: string) => {
       const tab = this.tabs.get(tabId);
       if (tab && tab.history[tab.currentIndex]) {
@@ -86,33 +87,22 @@ export class BrowserManager extends EventEmitter {
       }
     };
 
+    // 新しいページへのナビゲーション
     const navigationHandler = (_: Event, url: string) => {
       const title = view.webContents.getTitle();
       this.updateTabState(tabId, url, title);
     };
 
+    // ページ内ナビゲーション（History API, ハッシュ変更）
     const inPageHandler = (_: Event, url: string) => {
       const title = view.webContents.getTitle();
       this.updateTabState(tabId, url, title);
     };
 
+    // ページ読み込み開始時 - URLのみ更新
     const loadStartHandler = () => {
       const url = view.webContents.getURL();
       this.emit("url-updated", { tabId, url });
-    };
-
-    const loadFinishHandler = () => {
-      const url = view.webContents.getURL();
-      const title = view.webContents.getTitle();
-      this.emit("url-updated", { tabId, url });
-      this.emit("title-updated", { tabId, title });
-      this.emitNavigationState(tabId);
-    };
-
-    const domReadyHandler = () => {
-      const url = view.webContents.getURL();
-      this.emit("url-updated", { tabId, url });
-      this.emitNavigationState(tabId);
     };
 
     // イベントリスナーを登録
@@ -120,9 +110,6 @@ export class BrowserManager extends EventEmitter {
     view.webContents.on("did-navigate", navigationHandler);
     view.webContents.on("did-navigate-in-page", inPageHandler);
     view.webContents.on("did-start-loading", loadStartHandler);
-    view.webContents.on("did-stop-loading", loadFinishHandler);
-    view.webContents.on("did-finish-load", loadFinishHandler);
-    view.webContents.on("dom-ready", domReadyHandler);
 
     // クリーンアップ関数を返す
     return () => {
@@ -130,9 +117,6 @@ export class BrowserManager extends EventEmitter {
       view.webContents.removeListener("did-navigate", navigationHandler);
       view.webContents.removeListener("did-navigate-in-page", inPageHandler);
       view.webContents.removeListener("did-start-loading", loadStartHandler);
-      view.webContents.removeListener("did-stop-loading", loadFinishHandler);
-      view.webContents.removeListener("did-finish-load", loadFinishHandler);
-      view.webContents.removeListener("dom-ready", domReadyHandler);
     };
   }
 
