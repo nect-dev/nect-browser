@@ -1,18 +1,10 @@
 import { BaseWindow, WebContentsView } from "electron";
 import { EventEmitter } from "events";
 
-// 履歴エントリーのインターフェース
-interface History {
-  url: string;
-  title: string;
-}
-
 // タブの情報を格納するインターフェース
 interface Tab {
   id: string;
   view: WebContentsView;
-  history: History[];
-  currentIndex: number;
   cleanup: () => void;
 }
 
@@ -62,73 +54,43 @@ export class BrowserManager extends EventEmitter {
     }
   }
 
-  private updateTabState(tabId: string, url: string, title: string): void {
-    const tab = this.tabs.get(tabId);
-    if (!tab) return;
-
-    // 履歴を更新
-    tab.history = tab.history.slice(0, tab.currentIndex + 1);
-    tab.history.push({ url, title });
-    tab.currentIndex++;
-
-    // 状態更新を通知
-    this.emit("url-updated", { tabId, url });
-    this.emit("title-updated", { tabId, title });
-    this.emitNavigationState(tabId);
+  private emitNavigationState(tabId: string, view: WebContentsView): void {
+    this.emit("navigation-state-changed", {
+      tabId,
+      canGoBack: view.webContents.canGoBack(),
+      canGoForward: view.webContents.canGoForward(),
+    });
   }
 
   private setupViewEvents(tabId: string, view: WebContentsView): () => void {
-    // タイトルのみが更新された場合
     const titleHandler = (_: Event, title: string) => {
-      const tab = this.tabs.get(tabId);
-      if (tab && tab.history[tab.currentIndex]) {
-        tab.history[tab.currentIndex].title = title;
-        this.emit("title-updated", { tabId, title });
-      }
+      this.emit("title-updated", { tabId, title });
     };
 
-    // 新しいページへのナビゲーション
-    const navigationHandler = (_: Event, url: string) => {
+    const navigationHandler = () => {
+      const url = view.webContents.getURL();
       const title = view.webContents.getTitle();
-      this.updateTabState(tabId, url, title);
+      this.emit("url-updated", { tabId, url });
+      this.emit("title-updated", { tabId, title });
+      this.emitNavigationState(tabId, view);
     };
 
-    // ページ内ナビゲーション（History API, ハッシュ変更）
-    const inPageHandler = (_: Event, url: string) => {
-      const title = view.webContents.getTitle();
-      this.updateTabState(tabId, url, title);
-    };
-
-    // ページ読み込み開始時 - URLのみ更新
     const loadStartHandler = () => {
       const url = view.webContents.getURL();
       this.emit("url-updated", { tabId, url });
     };
 
-    // イベントリスナーを登録
     view.webContents.on("page-title-updated", titleHandler);
     view.webContents.on("did-navigate", navigationHandler);
-    view.webContents.on("did-navigate-in-page", inPageHandler);
+    view.webContents.on("did-navigate-in-page", navigationHandler);
     view.webContents.on("did-start-loading", loadStartHandler);
 
-    // クリーンアップ関数を返す
     return () => {
       view.webContents.removeListener("page-title-updated", titleHandler);
       view.webContents.removeListener("did-navigate", navigationHandler);
-      view.webContents.removeListener("did-navigate-in-page", inPageHandler);
+      view.webContents.removeListener("did-navigate-in-page", navigationHandler);
       view.webContents.removeListener("did-start-loading", loadStartHandler);
     };
-  }
-
-  private emitNavigationState(tabId: string): void {
-    const tab = this.tabs.get(tabId);
-    if (!tab) return;
-
-    this.emit("navigation-state-changed", {
-      tabId,
-      canGoBack: tab.currentIndex > 0,
-      canGoForward: tab.currentIndex < tab.history.length - 1,
-    });
   }
 
   // 新しいタブを作成
@@ -144,21 +106,11 @@ export class BrowserManager extends EventEmitter {
     });
 
     view.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
-    view.webContents.on("will-navigate", (event, url) => {
-      this.emit("url-updated", { tabId, url });
-    });
-
+    
     const cleanup = this.setupViewEvents(tabId, view);
-
-    this.tabs.set(tabId, {
-      id: tabId,
-      view,
-      history: [{ url, title: "New Tab" }],
-      currentIndex: 0,
-      cleanup,
-    });
-
+    this.tabs.set(tabId, { id: tabId, view, cleanup });
     view.webContents.loadURL(url);
+    
     return tabId;
   }
 
@@ -175,12 +127,11 @@ export class BrowserManager extends EventEmitter {
     this.activeTabId = tabId;
     this.updateActiveViewBounds();
 
-    const currentEntry = tab.history[tab.currentIndex];
     return {
-      url: currentEntry.url,
-      title: currentEntry.title,
-      canGoBack: tab.currentIndex > 0,
-      canGoForward: tab.currentIndex < tab.history.length - 1,
+      url: tab.view.webContents.getURL(),
+      title: tab.view.webContents.getTitle(),
+      canGoBack: tab.view.webContents.canGoBack(),
+      canGoForward: tab.view.webContents.canGoForward(),
     };
   }
 
@@ -218,27 +169,14 @@ export class BrowserManager extends EventEmitter {
     const tab = this.tabs.get(tabId);
     if (!tab) return false;
 
-    let newIndex = tab.currentIndex;
-    if (direction === "back" && tab.currentIndex > 0) {
-      newIndex--;
-    } else if (direction === "forward" && tab.currentIndex < tab.history.length - 1) {
-      newIndex++;
-    } else {
-      return false;
-    }
-
-    const entry = tab.history[newIndex];
-    try {
-      await tab.view.webContents.loadURL(entry.url);
-      tab.currentIndex = newIndex;
-      this.emit("url-updated", { tabId, url: entry.url });
-      this.emit("title-updated", { tabId, title: entry.title });
-      this.emitNavigationState(tabId);
+    if (direction === "back" && tab.view.webContents.navigationHistory.canGoBack()) {
+      tab.view.webContents.navigationHistory.goBack();
       return true;
-    } catch (error) {
-      console.error(`Failed to navigate ${direction}:`, error);
-      return false;
+    } else if (direction === "forward" && tab.view.webContents.navigationHistory.canGoForward()) {
+      tab.view.webContents.navigationHistory.goForward();
+      return true;
     }
+    return false;
   }
 
   // タブを再読み込み
@@ -254,13 +192,12 @@ export class BrowserManager extends EventEmitter {
   getTabInfo(tabId: string): TabInfo | null {
     const tab = this.tabs.get(tabId);
     if (!tab) return null;
-
-    const currentEntry = tab.history[tab.currentIndex];
+  
     return {
-      url: currentEntry.url,
-      title: currentEntry.title,
-      canGoBack: tab.currentIndex > 0,
-      canGoForward: tab.currentIndex < tab.history.length - 1,
+      url: tab.view.webContents.getURL(),
+      title: tab.view.webContents.getTitle(),
+      canGoBack: tab.view.webContents.navigationHistory.canGoBack(),
+      canGoForward: tab.view.webContents.navigationHistory.canGoForward(),
     };
   }
 

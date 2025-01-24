@@ -160,6 +160,39 @@ function setupIpcHandlers() {
     }
   });
 
+  // タブの作成
+  ipcMain.on("create-tab", (_, { tabId, url }) => {
+    if (!windows.browserManager || !windows.headerView) return;
+
+    windows.browserManager.createTab(tabId, url || "about:blank");
+    const info = windows.browserManager.switchTab(tabId);
+    windows.headerView.webContents.send("tab-created", { tabId, ...info });
+  });
+
+  // タブのリロード
+  ipcMain.on("reload-tab", (_, { tabId }) => {
+    if (!windows.browserManager) return;
+    windows.browserManager.reloadTab(tabId);
+  });
+
+  // タブの切り替え
+  ipcMain.on("switch-tab", (_, { tabId }) => {
+    if (!windows.browserManager || !windows.headerView) return;
+
+    const info = windows.browserManager.switchTab(tabId);
+    if (info) {
+      windows.headerView.webContents.send("tab-switched", { tabId, ...info });
+      const tab = windows.browserManager.getTabInfo(tabId);
+      if (tab) {
+        windows.headerView.webContents.send("navigation-state-changed", {
+          tabId,
+          canGoBack: info.canGoBack,
+          canGoForward: info.canGoForward,
+        });
+      }
+    }
+  });
+
   // URLの読み込み
   ipcMain.on("load-url", async (_, { tabId, url }) => {
     if (!windows.browserManager || !windows.headerView) return;
@@ -194,19 +227,12 @@ function setupIpcHandlers() {
     }
   });
 
-  // タブのリロード
-  ipcMain.on("reload-tab", (_, { tabId }) => {
-    if (!windows.browserManager) return;
-    windows.browserManager.reloadTab(tabId);
-  });
-
   // サイドバーの表示切り替え
   ipcMain.on("toggle-sidebar", () => {
     if (!windows.mainWindow || !windows.sidebarManager) return;
 
     const [width, height] = windows.mainWindow.getContentSize();
 
-    // サイドバーの位置とサイズを設定
     const sidebarBounds = {
       x: 0,
       y: WINDOW_CONFIG.HEADER_HEIGHT,
@@ -224,33 +250,6 @@ function setupIpcHandlers() {
           y: WINDOW_CONFIG.HEADER_HEIGHT,
           width: width - (windows.sidebarManager.getVisibility() ? WINDOW_CONFIG.SIDEBAR_WIDTH : 0),
           height: height - WINDOW_CONFIG.HEADER_HEIGHT,
-        });
-      }
-    }
-  });
-
-  // タブの作成
-  ipcMain.on("create-tab", (_, { tabId, url }) => {
-    if (!windows.browserManager || !windows.headerView) return;
-
-    windows.browserManager.createTab(tabId, url || "about:blank");
-    const info = windows.browserManager.switchTab(tabId);
-    windows.headerView.webContents.send("tab-created", { tabId, ...info });
-  });
-
-  // タブの切り替え
-  ipcMain.on("switch-tab", (_, { tabId }) => {
-    if (!windows.browserManager || !windows.headerView) return;
-
-    const info = windows.browserManager.switchTab(tabId);
-    if (info) {
-      windows.headerView.webContents.send("tab-switched", { tabId, ...info });
-      const tab = windows.browserManager.getTabInfo(tabId);
-      if (tab) {
-        windows.headerView.webContents.send("navigation-state-changed", {
-          tabId,
-          canGoBack: info.canGoBack,
-          canGoForward: info.canGoForward,
         });
       }
     }
