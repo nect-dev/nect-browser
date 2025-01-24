@@ -31,9 +31,9 @@ export class SidebarManager extends EventEmitter {
     });
 
     if (!app.isPackaged) {
-      view.webContents.loadURL('http://localhost:5173/sidebar.html');
+      view.webContents.loadURL("http://localhost:5173/sidebar.html");
     } else {
-      view.webContents.loadFile(path.join(__dirname, '../src/sidebar.html'));
+      view.webContents.loadFile(path.join(__dirname, "../src/sidebar.html"));
     }
 
     view.setVisible(false);
@@ -44,11 +44,11 @@ export class SidebarManager extends EventEmitter {
   public toggle(bounds: SidebarBounds): void {
     this.isVisible = !this.isVisible;
     this.view.setVisible(this.isVisible);
-    
+
     if (this.isVisible) {
       this.updateBounds(bounds);
     }
-    
+
     this.emit("visibility-changed", this.isVisible);
   }
 

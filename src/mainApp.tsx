@@ -1,16 +1,16 @@
-import { Minus, Maximize2, PanelLeft, Share, Ellipsis, X } from 'lucide-react';
-import NavigationBar from "@/components/main/NavigationBar"
+import { Minus, Maximize2, PanelLeft, Share, Ellipsis, X } from "lucide-react";
+import NavigationBar from "@/components/main/NavigationBar";
 import TabList from "@/components/main/TabList";
 
 export default function MainApp() {
   const handleWindowControls = {
-    minimize: () => window.electron.ipcRenderer?.send('window-control', 'minimize'),
-    maximize: () => window.electron.ipcRenderer?.send('window-control', 'maximize'),
-    close: () => window.electron.ipcRenderer?.send('window-control', 'close')
+    minimize: () => window.electron.ipcRenderer?.send("window-control", "minimize"),
+    maximize: () => window.electron.ipcRenderer?.send("window-control", "maximize"),
+    close: () => window.electron.ipcRenderer?.send("window-control", "close"),
   };
 
   const toggleSidebar = () => {
-    window.electron.ipcRenderer.send('toggle-sidebar');
+    window.electron.ipcRenderer.send("toggle-sidebar");
   };
 
   return (

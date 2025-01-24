@@ -56,7 +56,8 @@ export default function TabList() {
         return {
           tabs: newTabs,
           // もし閉じたタブがアクティブだった場合、最後のタブをアクティブにする
-          activeTabId: prev.activeTabId === data.tabId ? newTabs[newTabs.length - 1]?.id : prev.activeTabId,
+          activeTabId:
+            prev.activeTabId === data.tabId ? newTabs[newTabs.length - 1]?.id : prev.activeTabId,
         };
       });
     };

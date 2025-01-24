@@ -160,12 +160,12 @@ function setupIpcHandlers() {
   ipcMain.on("load-url", async (_, { tabId, url }) => {
     if (!windows.browserManager || !windows.uiView) return;
     await windows.browserManager.loadURL(tabId, url);
-    
+
     // タブの情報を取得して更新を通知
     const info = windows.browserManager.getTabInfo(tabId);
     if (info) {
-      windows.uiView.webContents.send("url-changed", { 
-        tabId, 
+      windows.uiView.webContents.send("url-changed", {
+        tabId,
         url: info.url,
       });
       windows.uiView.webContents.send("title-changed", {

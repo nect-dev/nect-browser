@@ -1,15 +1,14 @@
-
-import React, { useState, useEffect } from 'react';
-import { useAtom } from 'jotai';
-import { Globe, ArrowLeft, ArrowRight, RotateCw } from 'lucide-react';
-import { tabsAtom } from '../../store/tabs';
+import React, { useState, useEffect } from "react";
+import { useAtom } from "jotai";
+import { Globe, ArrowLeft, ArrowRight, RotateCw } from "lucide-react";
+import { tabsAtom } from "../../store/tabs";
 
 export default function NavigationBar() {
   const [{ activeTabId, tabs }] = useAtom(tabsAtom);
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState("");
 
   useEffect(() => {
-    const activeTab = tabs.find(tab => tab.id === activeTabId);
+    const activeTab = tabs.find((tab) => tab.id === activeTabId);
     if (activeTab) {
       setUrl(activeTab.url);
     }
@@ -17,20 +16,23 @@ export default function NavigationBar() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const fullUrl = url.startsWith('http') ? url : `https://${url}`;
-    window.electron.ipcRenderer.send('load-url', { url: fullUrl, tabId: activeTabId });
+    const fullUrl = url.startsWith("http") ? url : `https://${url}`;
+    window.electron.ipcRenderer.send("load-url", { url: fullUrl, tabId: activeTabId });
   };
 
   const handleBack = () => {
-    window.electron.ipcRenderer.send('navigate-history', { tabId: activeTabId, direction: 'back' });
+    window.electron.ipcRenderer.send("navigate-history", { tabId: activeTabId, direction: "back" });
   };
 
   const handleForward = () => {
-    window.electron.ipcRenderer.send('navigate-history', { tabId: activeTabId, direction: 'forward' });
+    window.electron.ipcRenderer.send("navigate-history", {
+      tabId: activeTabId,
+      direction: "forward",
+    });
   };
 
   const handleReload = () => {
-    window.electron.ipcRenderer.send('reload-tab', { tabId: activeTabId });
+    window.electron.ipcRenderer.send("reload-tab", { tabId: activeTabId });
   };
 
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
