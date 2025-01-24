@@ -5,7 +5,7 @@ import TabList from "@/components/main/TabList";
 export default function MainApp() {
   const handleWindowControls = {
     minimize: () => window.electron.ipcRenderer?.send("window-control", "minimize"),
-    maximize: () => window.electron.ipcRenderer?.send("window-control", "maximize"),
+    toggleMaximize: () => window.electron.ipcRenderer?.send("window-control", "toggle-maximize"),
     close: () => window.electron.ipcRenderer?.send("window-control", "close"),
   };
 
@@ -21,7 +21,7 @@ export default function MainApp() {
         alt="Background"
       />
       <div className="flex flex-col backdrop-blur-lg bg-gray-900/50">
-        <div className="h-8 flex" onDoubleClick={handleWindowControls.maximize}>
+        <div className="h-8 flex" onDoubleClick={handleWindowControls.toggleMaximize}>
           <TabList />
           <div className="flex items-center">
             <button
@@ -31,7 +31,7 @@ export default function MainApp() {
               <Minus size={12} />
             </button>
             <button
-              onClick={handleWindowControls.maximize}
+              onClick={handleWindowControls.toggleMaximize}
               className="p-1.5 m-1 flex items-center justify-center text-gray-100 hover:bg-gray-100/10 rounded-lg"
             >
               <Maximize2 size={12} />

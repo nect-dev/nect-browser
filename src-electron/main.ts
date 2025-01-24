@@ -151,7 +151,7 @@ function setupIpcHandlers() {
       case "minimize":
         windows.mainWindow.minimize();
         break;
-      case "maximize":
+      case "toggle-maximize":
         if (windows.mainWindow.isMaximized()) {
           windows.mainWindow.unmaximize();
         } else {
