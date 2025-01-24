@@ -41,10 +41,13 @@ function createMainWindow() {
   });
 
   win.contentView.addChildView(uiView);
+
+  const [width, _height] = win.getContentSize();
+
   uiView.setBounds({
     x: 0,
     y: 0,
-    width: WINDOW_CONFIG.INITIAL_WIDTH,
+    width: width,
     height: WINDOW_CONFIG.UI_HEIGHT,
   });
 
@@ -57,7 +60,7 @@ function createMainWindow() {
 
   // ウィンドウリサイズ時の処理
   win.on("resize", () => {
-    const [width, height] = win.getSize();
+    const [width, height] = win.getContentSize();
 
     // UIビューのサイズ更新
     uiView.setBounds({
