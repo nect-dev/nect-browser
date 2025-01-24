@@ -52,32 +52,42 @@ export default function TabList() {
     // タブが閉じられた時のイベントハンドラ
     const handleTabClosed = (_: any, data: { tabId: string }) => {
       setTabState((prev) => {
+        const closedTabIndex = prev.tabs.findIndex((tab) => tab.id === data.tabId);
         const newTabs = prev.tabs.filter((tab) => tab.id !== data.tabId);
+
+        if (prev.activeTabId === data.tabId) {
+          const newActiveTabId =
+            newTabs[closedTabIndex - 1]?.id ||
+            newTabs[closedTabIndex]?.id ||
+            newTabs[newTabs.length - 1]?.id;
+          if (newActiveTabId) {
+            window.electron.ipcRenderer.send("switch-tab", { tabId: newActiveTabId });
+          }
+
+          return {
+            tabs: newTabs,
+            activeTabId: newActiveTabId,
+          };
+        }
         return {
           tabs: newTabs,
-          // もし閉じたタブがアクティブだった場合、最後のタブをアクティブにする
-          activeTabId:
-            prev.activeTabId === data.tabId ? newTabs[newTabs.length - 1]?.id : prev.activeTabId,
+          activeTabId: prev.activeTabId,
         };
       });
     };
 
-    // イベントリスナーの登録
-    window.electron.ipcRenderer.on("tab-created", handleTabCreated);
-    window.electron.ipcRenderer.on("tab-switched", handleTabSwitched);
-    window.electron.ipcRenderer.on("title-changed", handleTitleChanged);
-    window.electron.ipcRenderer.on("url-changed", handleUrlChanged);
-    window.electron.ipcRenderer.on("tab-closed", handleTabClosed);
+    const cleanups = [
+      window.electron.ipcRenderer.on("tab-created", handleTabCreated),
+      window.electron.ipcRenderer.on("tab-switched", handleTabSwitched),
+      window.electron.ipcRenderer.on("title-changed", handleTitleChanged),
+      window.electron.ipcRenderer.on("url-changed", handleUrlChanged),
+      window.electron.ipcRenderer.on("tab-closed", handleTabClosed),
+    ];
 
     return () => {
-      // クリーンアップ
-      window.electron.ipcRenderer.removeListener("tab-created", handleTabCreated);
-      window.electron.ipcRenderer.removeListener("tab-switched", handleTabSwitched);
-      window.electron.ipcRenderer.removeListener("title-changed", handleTitleChanged);
-      window.electron.ipcRenderer.removeListener("url-changed", handleUrlChanged);
-      window.electron.ipcRenderer.removeListener("tab-closed", handleTabClosed);
+      cleanups.forEach((cleanup) => cleanup());
     };
-  }, [setTabState]); // setTabStateを依存配列に追加
+  }, [setTabState]);
 
   const addTab = () => {
     const newId = `tab-${crypto.randomUUID()}`;
@@ -96,7 +106,6 @@ export default function TabList() {
     e.stopPropagation();
 
     if (tabs.length === 1) {
-      // 最後のタブを閉じる場合は新しいタブを作成してから閉じる
       const newId = `tab-${crypto.randomUUID()}`;
       window.electron.ipcRenderer.send("create-tab", {
         tabId: newId,

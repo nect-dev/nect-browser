@@ -1,4 +1,3 @@
-// アプリケーションのメインプロセス
 import { app, BaseWindow, ipcMain, WebContentsView } from "electron";
 import * as path from "path";
 import { BrowserManager } from "./managers//BrowserManager";
@@ -23,7 +22,7 @@ const windows: {
   sidebarManager: null,
 };
 
-// メインウィンドウとUIビューを作成
+// メインウィンドウとヘッダービューを作成
 function createMainWindow() {
   const win = new BaseWindow({
     width: 1200,
@@ -60,7 +59,7 @@ function createMainWindow() {
   win.on("resize", () => {
     const [width, height] = win.getContentSize();
 
-    // UIビューのサイズ更新
+    // ヘッダーのサイズ更新
     headerView.setBounds({
       x: 0,
       y: 0,
@@ -72,19 +71,19 @@ function createMainWindow() {
     if (windows.sidebarManager?.getVisibility()) {
       // サイドバーの位置とサイズを更新
       const sidebarBounds = {
-        x: width - WINDOW_CONFIG.SIDEBAR_WIDTH,
+        x: 0,
         y: WINDOW_CONFIG.HEADER_HEIGHT,
         width: WINDOW_CONFIG.SIDEBAR_WIDTH,
         height: height - WINDOW_CONFIG.HEADER_HEIGHT,
       };
       windows.sidebarManager.updateBounds(sidebarBounds);
 
-      // アクティブタブのサイズを更新
+      // アクティブタブのサイズと位置を更新
       if (windows.browserManager) {
         const activeTab = windows.browserManager.getActiveTab();
         if (activeTab) {
           activeTab.view.setBounds({
-            x: 0,
+            x: WINDOW_CONFIG.SIDEBAR_WIDTH,
             y: WINDOW_CONFIG.HEADER_HEIGHT,
             width: width - WINDOW_CONFIG.SIDEBAR_WIDTH,
             height: height - WINDOW_CONFIG.HEADER_HEIGHT,
@@ -167,7 +166,6 @@ function setupIpcHandlers() {
 
     const success = await windows.browserManager.loadURL(tabId, url);
     if (success) {
-      // ナビゲーション状態の更新を送信
       const info = windows.browserManager.getTabInfo(tabId);
       if (info) {
         windows.headerView.webContents.send("navigation-state-changed", {
@@ -185,7 +183,6 @@ function setupIpcHandlers() {
 
     const success = await windows.browserManager.navigateHistory(tabId, direction);
     if (success) {
-      // ナビゲーション状態の更新を送信
       const info = windows.browserManager.getTabInfo(tabId);
       if (info) {
         windows.headerView.webContents.send("navigation-state-changed", {
@@ -209,23 +206,21 @@ function setupIpcHandlers() {
 
     const [width, height] = windows.mainWindow.getContentSize();
 
-    // サイドバーの位置とサイズを計算
+    // サイドバーの位置とサイズを設定
     const sidebarBounds = {
-      x: width - WINDOW_CONFIG.SIDEBAR_WIDTH,
+      x: 0,
       y: WINDOW_CONFIG.HEADER_HEIGHT,
       width: WINDOW_CONFIG.SIDEBAR_WIDTH,
       height: height - WINDOW_CONFIG.HEADER_HEIGHT,
     };
 
-    // サイドバーの表示を切り替え
     windows.sidebarManager.toggle(sidebarBounds);
 
-    // ブラウザビューのサイズを調整
     if (windows.browserManager) {
       const activeTab = windows.browserManager.getActiveTab();
       if (activeTab) {
         activeTab.view.setBounds({
-          x: 0,
+          x: windows.sidebarManager.getVisibility() ? WINDOW_CONFIG.SIDEBAR_WIDTH : 0,
           y: WINDOW_CONFIG.HEADER_HEIGHT,
           width: width - (windows.sidebarManager.getVisibility() ? WINDOW_CONFIG.SIDEBAR_WIDTH : 0),
           height: height - WINDOW_CONFIG.HEADER_HEIGHT,
@@ -250,7 +245,6 @@ function setupIpcHandlers() {
     const info = windows.browserManager.switchTab(tabId);
     if (info) {
       windows.headerView.webContents.send("tab-switched", { tabId, ...info });
-      // ナビゲーション状態を送信
       const tab = windows.browserManager.getTabInfo(tabId);
       if (tab) {
         windows.headerView.webContents.send("navigation-state-changed", {
