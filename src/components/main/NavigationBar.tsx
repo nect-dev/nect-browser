@@ -6,12 +6,34 @@ import { tabsAtom } from "../../store/tabs";
 export default function NavigationBar() {
   const [{ activeTabId, tabs }] = useAtom(tabsAtom);
   const [url, setUrl] = useState("");
+  const [canGoBack, setCanGoBack] = useState(false);
+  const [canGoForward, setCanGoForward] = useState(false);
 
   useEffect(() => {
     const activeTab = tabs.find((tab) => tab.id === activeTabId);
     if (activeTab) {
       setUrl(activeTab.url);
     }
+
+    const handleNavigationState = (
+      _: any,
+      data: {
+        tabId: string;
+        canGoBack: boolean;
+        canGoForward: boolean;
+      }
+    ) => {
+      if (data.tabId === activeTabId) {
+        setCanGoBack(data.canGoBack);
+        setCanGoForward(data.canGoForward);
+      }
+    };
+
+    window.electron.ipcRenderer.on("navigation-state-changed", handleNavigationState);
+
+    return () => {
+      window.electron.ipcRenderer.removeListener("navigation-state-changed", handleNavigationState);
+    };
   }, [activeTabId, tabs]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,14 +69,24 @@ export default function NavigationBar() {
     <div className="flex items-center gap-2 w-full max-w-2xl mx-auto">
       <div className="flex gap-1">
         <button
-          className="w-8 h-8 flex items-center justify-center text-gray-100 rounded-lg hover:bg-gray-100/10"
+          className={`w-8 h-8 flex items-center justify-center rounded-lg 
+            ${
+              canGoBack ? "text-gray-100 hover:bg-gray-100/10" : "text-gray-500 cursor-not-allowed"
+            }`}
           onClick={handleBack}
+          disabled={!canGoBack}
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
         <button
-          className="w-8 h-8 flex items-center justify-center text-gray-100 rounded-lg hover:bg-gray-100/10"
+          className={`w-8 h-8 flex items-center justify-center rounded-lg 
+            ${
+              canGoForward
+                ? "text-gray-100 hover:bg-gray-100/10"
+                : "text-gray-500 cursor-not-allowed"
+            }`}
           onClick={handleForward}
+          disabled={!canGoForward}
         >
           <ArrowRight className="w-4 h-4" />
         </button>

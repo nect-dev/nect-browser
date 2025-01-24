@@ -133,8 +133,12 @@ function initializeApp() {
     windows.uiView?.webContents.send("url-changed", { tabId, url });
   });
 
-  windows.sidebarManager.on("visibility-changed", (isVisible) => {
-    windows.uiView?.webContents.send("sidebar-visibility-changed", { isVisible });
+  windows.browserManager.on("navigation-state-changed", ({ tabId, canGoBack, canGoForward }) => {
+    windows.uiView?.webContents.send("navigation-state-changed", {
+      tabId,
+      canGoBack,
+      canGoForward,
+    });
   });
 }
 
@@ -159,26 +163,37 @@ function setupIpcHandlers() {
   // URLの読み込み
   ipcMain.on("load-url", async (_, { tabId, url }) => {
     if (!windows.browserManager || !windows.uiView) return;
-    await windows.browserManager.loadURL(tabId, url);
 
-    // タブの情報を取得して更新を通知
-    const info = windows.browserManager.getTabInfo(tabId);
-    if (info) {
-      windows.uiView.webContents.send("url-changed", {
-        tabId,
-        url: info.url,
-      });
-      windows.uiView.webContents.send("title-changed", {
-        tabId,
-        title: info.title || url,
-      });
+    const success = await windows.browserManager.loadURL(tabId, url);
+    if (success) {
+      // ナビゲーション状態の更新を送信
+      const info = windows.browserManager.getTabInfo(tabId);
+      if (info) {
+        windows.uiView.webContents.send("navigation-state-changed", {
+          tabId,
+          canGoBack: info.canGoBack,
+          canGoForward: info.canGoForward,
+        });
+      }
     }
   });
 
   // 履歴の移動
   ipcMain.on("navigate-history", async (_, { tabId, direction }) => {
-    if (!windows.browserManager) return;
-    await windows.browserManager.navigateHistory(tabId, direction);
+    if (!windows.browserManager || !windows.uiView) return;
+
+    const success = await windows.browserManager.navigateHistory(tabId, direction);
+    if (success) {
+      // ナビゲーション状態の更新を送信
+      const info = windows.browserManager.getTabInfo(tabId);
+      if (info) {
+        windows.uiView.webContents.send("navigation-state-changed", {
+          tabId,
+          canGoBack: info.canGoBack,
+          canGoForward: info.canGoForward,
+        });
+      }
+    }
   });
 
   // タブのリロード
@@ -234,6 +249,15 @@ function setupIpcHandlers() {
     const info = windows.browserManager.switchTab(tabId);
     if (info) {
       windows.uiView.webContents.send("tab-switched", { tabId, ...info });
+      // ナビゲーション状態を送信
+      const tab = windows.browserManager.getTabInfo(tabId);
+      if (tab) {
+        windows.uiView.webContents.send("navigation-state-changed", {
+          tabId,
+          canGoBack: info.canGoBack,
+          canGoForward: info.canGoForward,
+        });
+      }
     }
   });
 

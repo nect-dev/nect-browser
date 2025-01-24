@@ -1,24 +1,29 @@
 import { BaseWindow, WebContentsView } from "electron";
 import { EventEmitter } from "events";
 
+// 履歴エントリーのインターフェース
+interface History {
+  url: string;
+  title: string;
+}
+
 // タブの情報を格納するインターフェース
 interface Tab {
-  id: string; // タブの一意識別子
-  view: WebContentsView; // Webページの表示・制御用コンポーネント
-  history: string[]; // 閲覧履歴のURL配列
-  currentIndex: number; // 現在の履歴位置
-  cleanup: () => void; // リソース解放用の関数
+  id: string;
+  view: WebContentsView;
+  history: History[];
+  currentIndex: number;
+  cleanup: () => void;
 }
 
 // タブの情報を返すインターフェース
 interface TabInfo {
-  url: string; // 現在のURL
-  title: string; // ページタイトル
-  canGoBack: boolean; // 戻るボタンの有効状態
-  canGoForward: boolean; // 進むボタンの有効状態
+  url: string;
+  title: string;
+  canGoBack: boolean;
+  canGoForward: boolean;
 }
 
-// ブラウザのタブ管理を行うクラス
 export class BrowserManager extends EventEmitter {
   private mainWindow: BaseWindow;
   private tabs: Map<string, Tab>;
@@ -30,11 +35,9 @@ export class BrowserManager extends EventEmitter {
     this.tabs = new Map();
     this.activeTabId = null;
 
-    // ウィンドウリサイズ時のイベントハンドラを設定
     const resizeHandler = () => this.updateActiveViewBounds();
     this.mainWindow.on("resize", resizeHandler);
 
-    // インスタンス破棄時のクリーンアップ処理
     this.cleanup = () => {
       this.mainWindow.removeListener("resize", resizeHandler);
       Array.from(this.tabs.keys()).forEach((tabId) => this.closeTab(tabId));
@@ -59,50 +62,106 @@ export class BrowserManager extends EventEmitter {
     }
   }
 
-  // タブのWebContentsに対するイベントリスナーを設定
-  private setupViewEvents(tabId: string, view: WebContentsView): () => void {
+  private updateTabState(tabId: string, url: string, title: string): void {
     const tab = this.tabs.get(tabId);
-    if (!tab) return () => {};
+    if (!tab) return;
 
-    // タイトル更新時のイベントハンドラ
+    // 履歴を更新
+    tab.history = tab.history.slice(0, tab.currentIndex + 1);
+    tab.history.push({ url, title });
+    tab.currentIndex++;
+
+    // 状態更新を通知
+    this.emit("url-updated", { tabId, url });
+    this.emit("title-updated", { tabId, title });
+    this.emitNavigationState(tabId);
+  }
+
+  private setupViewEvents(tabId: string, view: WebContentsView): () => void {
     const titleHandler = (_: Event, title: string) => {
-      this.emit("title-updated", { tabId, title });
+      const tab = this.tabs.get(tabId);
+      if (tab && tab.history[tab.currentIndex]) {
+        tab.history[tab.currentIndex].title = title;
+        this.emit("title-updated", { tabId, title });
+      }
     };
 
-    // ページ遷移完了時のイベントハンドラ
-    const navigationHandler = async (_: Event, url: string) => {
-      // 履歴を更新
-      tab.history = tab.history.slice(0, tab.currentIndex + 1);
-      tab.history.push(url);
-      tab.currentIndex++;
-
-      // URL更新を通知
-      this.emit("url-updated", { tabId, url });
-
-      // ページ読み込み完了後にタイトルを取得して通知
+    const navigationHandler = (_: Event, url: string) => {
       const title = view.webContents.getTitle();
-      this.emit("title-updated", { tabId, title: title || url });
+      this.updateTabState(tabId, url, title);
+    };
+
+    const inPageHandler = (_: Event, url: string) => {
+      const title = view.webContents.getTitle();
+      this.updateTabState(tabId, url, title);
+    };
+
+    const loadStartHandler = () => {
+      const url = view.webContents.getURL();
+      this.emit("url-updated", { tabId, url });
+    };
+
+    const loadFinishHandler = () => {
+      const url = view.webContents.getURL();
+      const title = view.webContents.getTitle();
+      this.emit("url-updated", { tabId, url });
+      this.emit("title-updated", { tabId, title });
+      this.emitNavigationState(tabId);
+    };
+
+    const domReadyHandler = () => {
+      const url = view.webContents.getURL();
+      this.emit("url-updated", { tabId, url });
+      this.emitNavigationState(tabId);
     };
 
     // イベントリスナーを登録
     view.webContents.on("page-title-updated", titleHandler);
     view.webContents.on("did-navigate", navigationHandler);
+    view.webContents.on("did-navigate-in-page", inPageHandler);
+    view.webContents.on("did-start-loading", loadStartHandler);
+    view.webContents.on("did-stop-loading", loadFinishHandler);
+    view.webContents.on("did-finish-load", loadFinishHandler);
+    view.webContents.on("dom-ready", domReadyHandler);
 
     // クリーンアップ関数を返す
     return () => {
       view.webContents.removeListener("page-title-updated", titleHandler);
       view.webContents.removeListener("did-navigate", navigationHandler);
+      view.webContents.removeListener("did-navigate-in-page", inPageHandler);
+      view.webContents.removeListener("did-start-loading", loadStartHandler);
+      view.webContents.removeListener("did-stop-loading", loadFinishHandler);
+      view.webContents.removeListener("did-finish-load", loadFinishHandler);
+      view.webContents.removeListener("dom-ready", domReadyHandler);
     };
+  }
+
+  private emitNavigationState(tabId: string): void {
+    const tab = this.tabs.get(tabId);
+    if (!tab) return;
+
+    this.emit("navigation-state-changed", {
+      tabId,
+      canGoBack: tab.currentIndex > 0,
+      canGoForward: tab.currentIndex < tab.history.length - 1,
+    });
   }
 
   // 新しいタブを作成
   createTab(tabId: string, url: string = "about:blank"): string {
     const view = new WebContentsView({
       webPreferences: {
-        nodeIntegration: false, // セキュリティのためNode.js統合を無効化
-        contextIsolation: true, // レンダラープロセスを分離
-        sandbox: true, // サンドボックス化を有効化
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true,
+        webviewTag: true,
+        allowRunningInsecureContent: false,
       },
+    });
+
+    view.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+    view.webContents.on("will-navigate", (event, url) => {
+      this.emit("url-updated", { tabId, url });
     });
 
     const cleanup = this.setupViewEvents(tabId, view);
@@ -110,7 +169,7 @@ export class BrowserManager extends EventEmitter {
     this.tabs.set(tabId, {
       id: tabId,
       view,
-      history: [url],
+      history: [{ url, title: "New Tab" }],
       currentIndex: 0,
       cleanup,
     });
@@ -119,24 +178,23 @@ export class BrowserManager extends EventEmitter {
     return tabId;
   }
 
-  // 指定したタブに切り替え
+  // タブを切り替え
   switchTab(tabId: string): TabInfo | null {
     if (!this.tabs.has(tabId)) return null;
 
-    // 現在のアクティブタブを非表示
     if (this.activeTabId && this.tabs.has(this.activeTabId)) {
       this.mainWindow.contentView.removeChildView(this.tabs.get(this.activeTabId)!.view);
     }
 
-    // 新しいタブを表示
     const tab = this.tabs.get(tabId)!;
     this.mainWindow.contentView.addChildView(tab.view);
     this.activeTabId = tabId;
     this.updateActiveViewBounds();
 
+    const currentEntry = tab.history[tab.currentIndex];
     return {
-      url: tab.view.webContents.getURL(),
-      title: tab.view.webContents.getTitle(),
+      url: currentEntry.url,
+      title: currentEntry.title,
       canGoBack: tab.currentIndex > 0,
       canGoForward: tab.currentIndex < tab.history.length - 1,
     };
@@ -152,7 +210,7 @@ export class BrowserManager extends EventEmitter {
       this.activeTabId = null;
     }
 
-    tab.cleanup(); // イベントリスナーを解除
+    tab.cleanup();
     tab.view.webContents.close();
     return this.tabs.delete(tabId);
   }
@@ -166,7 +224,7 @@ export class BrowserManager extends EventEmitter {
       await tab.view.webContents.loadURL(url);
       return true;
     } catch (error) {
-      this.emit("load-error", { tabId, url, error });
+      console.error(`Failed to load URL: ${url}`, error);
       return false;
     }
   }
@@ -176,14 +234,27 @@ export class BrowserManager extends EventEmitter {
     const tab = this.tabs.get(tabId);
     if (!tab) return false;
 
+    let newIndex = tab.currentIndex;
     if (direction === "back" && tab.currentIndex > 0) {
-      tab.currentIndex--;
-      return this.loadURL(tabId, tab.history[tab.currentIndex]);
+      newIndex--;
     } else if (direction === "forward" && tab.currentIndex < tab.history.length - 1) {
-      tab.currentIndex++;
-      return this.loadURL(tabId, tab.history[tab.currentIndex]);
+      newIndex++;
+    } else {
+      return false;
     }
-    return false;
+
+    const entry = tab.history[newIndex];
+    try {
+      await tab.view.webContents.loadURL(entry.url);
+      tab.currentIndex = newIndex;
+      this.emit("url-updated", { tabId, url: entry.url });
+      this.emit("title-updated", { tabId, title: entry.title });
+      this.emitNavigationState(tabId);
+      return true;
+    } catch (error) {
+      console.error(`Failed to navigate ${direction}:`, error);
+      return false;
+    }
   }
 
   // タブを再読み込み
@@ -200,15 +271,16 @@ export class BrowserManager extends EventEmitter {
     const tab = this.tabs.get(tabId);
     if (!tab) return null;
 
+    const currentEntry = tab.history[tab.currentIndex];
     return {
-      url: tab.view.webContents.getURL(),
-      title: tab.view.webContents.getTitle(),
+      url: currentEntry.url,
+      title: currentEntry.title,
       canGoBack: tab.currentIndex > 0,
       canGoForward: tab.currentIndex < tab.history.length - 1,
     };
   }
 
-  // アクティブなタブの情報を取得
+  // アクティブなタブを取得
   getActiveTab(): Tab | null {
     if (!this.activeTabId) return null;
     return this.tabs.get(this.activeTabId) || null;
