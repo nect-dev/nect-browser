@@ -14,14 +14,14 @@ export default function MainApp() {
   };
 
   return (
-    <div className="h-screen relative flex flex-col">
+    <div className="h-screen relative flex flex-col select-none">
       <img
         src="assets/wallpapers/default.jpg"
         className="w-full h-full inset-0 absolute object-cover object-center -z-10"
         alt="Background"
       />
       <div className="flex flex-col backdrop-blur-lg bg-gray-900/50">
-        <div className="h-8 flex">
+        <div className="h-8 flex" onDoubleClick={handleWindowControls.maximize}>
           <TabList />
           <div className="flex items-center">
             <button
