@@ -1,5 +1,6 @@
 import { Minus, Maximize2, PanelLeft, Share, Ellipsis, X } from 'lucide-react';
 import NavigationBar from "@/components/main/NavigationBar"
+import TabList from "@/components/main/TabList";
 
 export default function MainApp() {
   const handleWindowControls = {
@@ -19,8 +20,9 @@ export default function MainApp() {
         className="w-full h-full inset-0 absolute object-cover object-center -z-10"
         alt="Background"
       />
-      <div className="flex flex-col backdrop-blur-lg bg-gray-100/10">
+      <div className="flex flex-col backdrop-blur-lg bg-gray-900/50">
         <div className="h-8 flex">
+          <TabList />
           <div className="flex items-center">
             <button
               onClick={handleWindowControls.minimize}
