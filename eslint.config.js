@@ -4,6 +4,10 @@ import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
+const trimmedBrowserGlobals = Object.fromEntries(
+  Object.entries(globals.browser).map(([key, value]) => [key.trim(), value])
+);
+
 export default tseslint.config(
   { ignores: ["dist"] },
   {
@@ -11,7 +15,9 @@ export default tseslint.config(
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
       ecmaVersion: 2020,
-      globals: globals.browser,
+      globals: {
+        ...trimmedBrowserGlobals,
+      },
     },
     plugins: {
       "react-hooks": reactHooks,
