@@ -124,15 +124,15 @@ export default function TabList() {
           onClick={() => switchTab(tab.id)}
           className={`
             group relative flex flex-1 items-center justify-between
-            min-w-0 max-w-xs px-1 h-8 cursor-pointer
+            min-w-0 max-w-60 p-1 h-8 cursor-pointer
             transition-colors duration-200 border-x border-gray-100/10 no-titlebar
             ${activeTabId === tab.id ? "bg-gray-100/10 rounded-t-lg" : "hover:bg-gray-100/5"}
           `}
         >
-          <span className="px-2 text-xs font-medium truncate text-white">
+          <span className="w-0 p-1 grow text-center text-xs line-clamp-1 text-white">
             {tab.title || tab.url || "New Tab"}
           </span>
-          {(activeTabId === tab.id || tabs.length > 1) && (
+          {(activeTabId === tab.id || tabs.length === 1) && (
             <button
               onClick={(e) => closeTab(e, tab.id)}
               className={`

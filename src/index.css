@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 .titlebar {
-  app-region: drag;
+  -webkit-app-region: drag;
 }
 
 .no-titlebar {
-  app-region: no-drag;
+  -webkit-app-region: no-drag;
 }
