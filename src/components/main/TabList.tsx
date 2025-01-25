@@ -2,13 +2,17 @@ import React, { useEffect } from "react";
 import { Plus, X } from "lucide-react";
 import { useAtom } from "jotai";
 import { tabsAtom } from "../../store/tabs";
+import { IpcRendererEvent } from "electron";
 
 export default function TabList() {
   const [{ tabs, activeTabId }, setTabState] = useAtom(tabsAtom);
 
   useEffect(() => {
     // タブが作成された時のイベントハンドラ
-    const handleTabCreated = (_: any, data: { tabId: string; url: string; title: string }) => {
+    const handleTabCreated = (
+      _: IpcRendererEvent,
+      data: { tabId: string; url: string; title: string }
+    ) => {
       setTabState((prev) => ({
         tabs: [
           ...prev.tabs,
@@ -23,7 +27,10 @@ export default function TabList() {
     };
 
     // タブが切り替わった時のイベントハンドラ
-    const handleTabSwitched = (_: any, data: { tabId: string; url: string; title: string }) => {
+    const handleTabSwitched = (
+      _: IpcRendererEvent,
+      data: { tabId: string; url: string; title: string }
+    ) => {
       setTabState((prev) => ({
         ...prev,
         tabs: prev.tabs.map((tab) =>
@@ -34,7 +41,7 @@ export default function TabList() {
     };
 
     // タイトルが変更された時のイベントハンドラ
-    const handleTitleChanged = (_: any, data: { tabId: string; title: string }) => {
+    const handleTitleChanged = (_: IpcRendererEvent, data: { tabId: string; title: string }) => {
       setTabState((prev) => ({
         ...prev,
         tabs: prev.tabs.map((tab) => (tab.id === data.tabId ? { ...tab, title: data.title } : tab)),
@@ -42,7 +49,7 @@ export default function TabList() {
     };
 
     // URLが変更された時のイベントハンドラ
-    const handleUrlChanged = (_: any, data: { tabId: string; url: string }) => {
+    const handleUrlChanged = (_: IpcRendererEvent, data: { tabId: string; url: string }) => {
       setTabState((prev) => ({
         ...prev,
         tabs: prev.tabs.map((tab) => (tab.id === data.tabId ? { ...tab, url: data.url } : tab)),
@@ -50,7 +57,7 @@ export default function TabList() {
     };
 
     // タブが閉じられた時のイベントハンドラ
-    const handleTabClosed = (_: any, data: { tabId: string }) => {
+    const handleTabClosed = (_: IpcRendererEvent, data: { tabId: string }) => {
       setTabState((prev) => {
         const closedTabIndex = prev.tabs.findIndex((tab) => tab.id === data.tabId);
         const newTabs = prev.tabs.filter((tab) => tab.id !== data.tabId);
