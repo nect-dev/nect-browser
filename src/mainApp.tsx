@@ -21,7 +21,7 @@ export default function MainApp() {
         alt="Background"
       />
       <div className="flex flex-col backdrop-blur-lg bg-gray-900/50">
-        <div className="h-8 flex" onDoubleClick={handleWindowControls.toggleMaximize}>
+        <div className="h-8 flex titlebar">
           <TabList />
           <div className="flex items-center">
             <button

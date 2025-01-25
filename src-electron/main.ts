@@ -27,6 +27,7 @@ function createMainWindow() {
   const win = new BaseWindow({
     width: 1200,
     height: 800,
+    titleBarStyle: "hidden",
   });
 
   const headerView = new WebContentsView({
