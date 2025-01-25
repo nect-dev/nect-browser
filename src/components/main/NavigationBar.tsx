@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAtom } from "jotai";
 import { Globe, ArrowLeft, ArrowRight, RotateCw } from "lucide-react";
 import { tabsAtom } from "../../store/tabs";
+import { IpcRendererEvent } from "electron";
 
 export default function NavigationBar() {
   const [{ activeTabId, tabs }] = useAtom(tabsAtom);
@@ -26,7 +27,7 @@ export default function NavigationBar() {
     }
 
     const handleNavigationState = (
-      _: any,
+      _: IpcRendererEvent,
       data: {
         tabId: string;
         canGoBack: boolean;
