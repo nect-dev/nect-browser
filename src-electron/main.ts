@@ -40,7 +40,7 @@ function createMainWindow() {
 
   win.contentView.addChildView(headerView);
 
-  const [width, _height] = win.getContentSize();
+  const [width] = win.getContentSize();
 
   headerView.setBounds({
     x: 0,
