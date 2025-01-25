@@ -69,7 +69,7 @@ export default function NavigationBar() {
         fullUrl = `https://www.google.com/search?q=${searchQuery}`;
       }
     }
-  
+
     window.electron.ipcRenderer.send("load-url", { url: fullUrl, tabId: activeTabId });
   };
 

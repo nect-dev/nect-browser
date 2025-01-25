@@ -106,11 +106,11 @@ export class BrowserManager extends EventEmitter {
     });
 
     view.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
-    
+
     const cleanup = this.setupViewEvents(tabId, view);
     this.tabs.set(tabId, { id: tabId, view, cleanup });
     view.webContents.loadURL(url);
-    
+
     return tabId;
   }
 
@@ -192,7 +192,7 @@ export class BrowserManager extends EventEmitter {
   getTabInfo(tabId: string): TabInfo | null {
     const tab = this.tabs.get(tabId);
     if (!tab) return null;
-  
+
     return {
       url: tab.view.webContents.getURL(),
       title: tab.view.webContents.getTitle(),

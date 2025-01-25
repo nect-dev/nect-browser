@@ -9,6 +9,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "format": "prettier . --write",
     "electron:dev": "concurrently \"npm run dev\" \"tsc -p src-electron && electron .",
     "electron:start": "npm run build && tsc -p src-electron && electron .",
     "electron:build": "npm run build && tsc -p src-electron && electron-builder"
