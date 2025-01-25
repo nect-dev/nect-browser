@@ -108,6 +108,7 @@ function createMainWindow() {
 
   // ウィンドウリサイズ時の処理
   win.on("move", updateWebviewSize);
+  win.on("restore", updateWebviewSize);
   win.on("maximize", updateWebviewSize);
   win.on("unmaximize", updateWebviewSize);
   win.on("resize", updateWebviewSize);
