@@ -3,3 +3,7 @@
 .titlebar {
   app-region: drag;
 }
+
+.no-titlebar {
+  app-region: no-drag;
+}

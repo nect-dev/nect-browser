@@ -26,19 +26,19 @@ export default function MainApp() {
           <div className="flex items-center">
             <button
               onClick={handleWindowControls.minimize}
-              className="p-1.5 m-1 flex items-center justify-center text-gray-100 hover:bg-gray-100/10 rounded-lg"
+              className="p-1.5 m-1 flex items-center justify-center text-gray-100 hover:bg-gray-100/10 rounded-lg no-titlebar"
             >
               <Minus size={12} />
             </button>
             <button
               onClick={handleWindowControls.toggleMaximize}
-              className="p-1.5 m-1 flex items-center justify-center text-gray-100 hover:bg-gray-100/10 rounded-lg"
+              className="p-1.5 m-1 flex items-center justify-center text-gray-100 hover:bg-gray-100/10 rounded-lg no-titlebar"
             >
               <Maximize2 size={12} />
             </button>
             <button
               onClick={handleWindowControls.close}
-              className="p-1.5 m-1 flex items-center justify-center text-gray-100 hover:bg-red-500 rounded-lg"
+              className="p-1.5 m-1 flex items-center justify-center text-gray-100 hover:bg-red-500 rounded-lg no-titlebar"
             >
               <X size={12} />
             </button>

@@ -125,7 +125,7 @@ export default function TabList() {
           className={`
             group relative flex flex-1 items-center justify-between
             min-w-0 max-w-xs px-1 h-8 cursor-pointer
-            transition-colors duration-200 border-x border-gray-100/10
+            transition-colors duration-200 border-x border-gray-100/10 no-titlebar
             ${activeTabId === tab.id ? "bg-gray-100/10 rounded-t-lg" : "hover:bg-gray-100/5"}
           `}
         >
@@ -147,7 +147,7 @@ export default function TabList() {
       ))}
       <button
         onClick={addTab}
-        className="p-1.5 m-1 mr-10 flex items-center text-gray-100 hover:bg-gray-100/10 rounded-lg"
+        className="p-1.5 m-1 mr-10 flex items-center text-gray-100 hover:bg-gray-100/10 rounded-lg no-titlebar"
       >
         <Plus className="w-3 h-3" />
       </button>
