@@ -56,8 +56,7 @@ function createMainWindow() {
     headerView.webContents.loadFile(path.join(__dirname, "../src/main.html"));
   }
 
-  // ウィンドウリサイズ時の処理
-  win.on("resize", () => {
+  const updateWebviewSize = () => {
     const [width, height] = win.getContentSize();
 
     // ヘッダーのサイズ更新
@@ -105,7 +104,13 @@ function createMainWindow() {
         }
       }
     }
-  });
+  };
+
+  // ウィンドウリサイズ時の処理
+  win.on("move", updateWebviewSize);
+  win.on("maximize", updateWebviewSize);
+  win.on("unmaximize", updateWebviewSize);
+  win.on("resize", updateWebviewSize);
 
   return { win, headerView };
 }
