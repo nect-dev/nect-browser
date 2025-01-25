@@ -31,7 +31,7 @@ export class SidebarManager extends EventEmitter {
     if (!app.isPackaged) {
       view.webContents.loadURL("http://localhost:5173/sidebar.html");
     } else {
-      view.webContents.loadFile(path.join(__dirname, "../src/sidebar.html"));
+      view.webContents.loadFile(path.join(__dirname, "../../src/sidebar.html"));
     }
 
     view.setVisible(false);

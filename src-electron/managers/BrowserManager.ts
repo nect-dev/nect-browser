@@ -63,8 +63,8 @@ export class BrowserManager extends EventEmitter {
   private emitNavigationState(tabId: string, view: WebContentsView): void {
     this.emit("navigation-state-changed", {
       tabId,
-      canGoBack: view.webContents.canGoBack(),
-      canGoForward: view.webContents.canGoForward(),
+      canGoBack: view.webContents.navigationHistory.canGoBack(),
+      canGoForward: view.webContents.navigationHistory.canGoForward(),
     });
   }
 
