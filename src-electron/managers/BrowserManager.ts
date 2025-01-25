@@ -26,7 +26,7 @@ export class BrowserManager extends EventEmitter {
     mainWindow: BaseWindow,
     private readonly sidebarManager: SidebarManager,
     private readonly headerHeight: number,
-    private readonly sidebarWidth: number,
+    private readonly sidebarWidth: number
   ) {
     super();
     this.mainWindow = mainWindow;
