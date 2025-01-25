@@ -12,11 +12,14 @@ export default function NavigationBar() {
   useEffect(() => {
     const activeTab = tabs.find((tab) => tab.id === activeTabId);
     if (activeTab) {
-      const urlObj = new URL(activeTab.url);
-      if (urlObj.hostname === "www.google.com" && urlObj.pathname === "/search") {
-        const searchQuery = urlObj.searchParams.get("q");
-        setUrl(searchQuery || activeTab.url);
-      } else {
+      try {
+        const urlObj = new URL(activeTab.url);
+        if (urlObj.hostname === "www.google.com" && urlObj.pathname === "/search") {
+          const searchQuery = urlObj.searchParams.get("q");
+          setUrl(searchQuery || activeTab.url);
+        } else {
+        }
+      } catch {
         setUrl(activeTab.url);
       }
     }
