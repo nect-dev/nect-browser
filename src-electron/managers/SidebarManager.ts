@@ -12,11 +12,9 @@ export interface SidebarBounds {
 export class SidebarManager extends EventEmitter {
   private view: WebContentsView;
   private isVisible: boolean = false;
-  private readonly UI_HEIGHT: number;
 
-  constructor(uiHeight: number) {
+  constructor() {
     super();
-    this.UI_HEIGHT = uiHeight;
     this.view = this.createView();
   }
 

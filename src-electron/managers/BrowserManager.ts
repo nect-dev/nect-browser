@@ -1,5 +1,6 @@
 import { BaseWindow, WebContentsView } from "electron";
 import { EventEmitter } from "events";
+import { SidebarManager } from "./SidebarManager";
 
 // タブの情報を格納するインターフェース
 interface Tab {
@@ -21,7 +22,12 @@ export class BrowserManager extends EventEmitter {
   private tabs: Map<string, Tab>;
   private activeTabId: string | null;
 
-  constructor(mainWindow: BaseWindow) {
+  constructor(
+    mainWindow: BaseWindow,
+    private readonly sidebarManager: SidebarManager,
+    private readonly headerHeight: number,
+    private readonly sidebarWidth: number,
+  ) {
     super();
     this.mainWindow = mainWindow;
     this.tabs = new Map();
@@ -114,6 +120,19 @@ export class BrowserManager extends EventEmitter {
     return tabId;
   }
 
+  // ブラウザビューの位置とサイズを計算
+  private calculateBrowserViewBounds(): { x: number; y: number; width: number; height: number } {
+    const [width, height] = this.mainWindow.getSize();
+    const isSidebarVisible = this.sidebarManager.getVisibility();
+
+    return {
+      x: isSidebarVisible ? this.sidebarWidth : 0,
+      y: this.headerHeight,
+      width: width - (isSidebarVisible ? this.sidebarWidth : 0),
+      height: height - this.headerHeight,
+    };
+  }
+
   // タブを切り替え
   switchTab(tabId: string): TabInfo | null {
     if (!this.tabs.has(tabId)) return null;
@@ -125,7 +144,10 @@ export class BrowserManager extends EventEmitter {
     const tab = this.tabs.get(tabId)!;
     this.mainWindow.contentView.addChildView(tab.view);
     this.activeTabId = tabId;
-    this.updateActiveViewBounds();
+
+    // サイドバーの状態を考慮してビューの位置とサイズを更新
+    const bounds = this.calculateBrowserViewBounds();
+    tab.view.setBounds(bounds);
 
     return {
       url: tab.view.webContents.getURL(),

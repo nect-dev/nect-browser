@@ -123,11 +123,16 @@ function initializeApp() {
   windows.headerView = main.headerView;
 
   // サイドバーマネージャーの初期化
-  windows.sidebarManager = new SidebarManager(WINDOW_CONFIG.HEADER_HEIGHT);
+  windows.sidebarManager = new SidebarManager();
   windows.mainWindow.contentView.addChildView(windows.sidebarManager.getView());
 
   // ブラウザマネージャーの初期化
-  windows.browserManager = new BrowserManager(main.win);
+  windows.browserManager = new BrowserManager(
+    main.win,
+    windows.sidebarManager,
+    WINDOW_CONFIG.HEADER_HEIGHT,
+    WINDOW_CONFIG.SIDEBAR_WIDTH
+  );
   windows.browserManager.createTab("tab-1", "about:blank");
   windows.browserManager.switchTab("tab-1");
 

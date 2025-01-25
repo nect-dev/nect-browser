@@ -18,6 +18,7 @@ export default function NavigationBar() {
           const searchQuery = urlObj.searchParams.get("q");
           setUrl(searchQuery || activeTab.url);
         } else {
+          setUrl(activeTab.url);
         }
       } catch {
         setUrl(activeTab.url);
